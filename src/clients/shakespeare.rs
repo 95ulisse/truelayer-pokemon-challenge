@@ -19,6 +19,7 @@ impl ShakespeareString {
 }
 
 /// A client for the Shakespeare Translator API.
+#[derive(Clone)]
 pub struct ShakespeareClient {
   client: Client,
   endpoint_url: String

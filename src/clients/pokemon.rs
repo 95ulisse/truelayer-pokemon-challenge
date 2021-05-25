@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use anyhow::{Context, Result, anyhow};
 use lru::LruCache;
 use reqwest::{Client, Url};
@@ -5,10 +7,11 @@ use serde::{Serialize, Deserialize};
 use tracing::{instrument, debug};
 
 /// A client for the Pokemon APIs.
+#[derive(Clone)]
 pub struct PokemonClient {
   client: Client,
   endpoint_url: Url,
-  cache: LruCache<String, String>
+  cache: Arc<Mutex<LruCache<String, String>>>
 }
 
 /// The response from the Pokemon API.
@@ -35,19 +38,19 @@ impl PokemonClient {
     Ok(PokemonClient {
       client: Client::new(),
       endpoint_url: Url::parse(base_url).context("Invalid Pokemon API base URL")?,
-      cache: LruCache::new(cache_size)
+      cache: Arc::new(Mutex::new(LruCache::new(cache_size)))
     })
   }
 
   /// Retrieves the description of the Pokemon with the given name.
   /// If no Pokemon can be found, `None` is returned.
   #[instrument(skip(self), err)]
-  pub async fn get_pokemon_description(&mut self, name: &str) -> Result<Option<String>> {
+  pub async fn get_pokemon_description(&self, name: &str) -> Result<Option<String>> {
 
     let name = name.to_lowercase();
 
     // Before sending the request, check if we have a cached description
-    if let Some(cached) = self.cache.get(&name) {
+    if let Some(cached) = self.cache.lock().unwrap().get(&name) {
       debug!("Cache hit");
       return Ok(Some(cached.to_string()));
     }
@@ -83,7 +86,7 @@ impl PokemonClient {
 
     // Cache the extracted description
     if let Some(x) = &description {
-      self.cache.put(name.to_string(), x.to_string());
+      self.cache.lock().unwrap().put(name.to_string(), x.to_string());
     }
 
     description
@@ -114,7 +117,7 @@ mod test {
     }).await;
 
     // Build a new client and perform the request
-    let mut client = PokemonClient::new(&server.base_url(), 0).unwrap();
+    let client = PokemonClient::new(&server.base_url(), 0).unwrap();
     let res = client.get_pokemon_description(name).await;
 
     // Assert that the mock matched
@@ -137,7 +140,7 @@ mod test {
     }).await;
 
     // Build a new client and perform the request
-    let mut client = PokemonClient::new(&server.base_url(), 0).unwrap();
+    let client = PokemonClient::new(&server.base_url(), 0).unwrap();
     let res = client.get_pokemon_description(name).await;
 
     // Assert that the mock matched
@@ -160,7 +163,7 @@ mod test {
     }).await;
 
     // Build a new client and perform the request
-    let mut client = PokemonClient::new(&server.base_url(), 0).unwrap();
+    let client = PokemonClient::new(&server.base_url(), 0).unwrap();
     let res = client.get_pokemon_description(name).await;
 
     // Assert that the mock matched
@@ -278,7 +281,7 @@ mod test {
 
     // Build a new client with a cache of 1 item and perform the first request.
     // The first request will go through, since its the first one.
-    let mut client = PokemonClient::new(&server.base_url(), 1).unwrap();
+    let client = PokemonClient::new(&server.base_url(), 1).unwrap();
     assert_eq!(client.get_pokemon_description("pikachu").await.unwrap(), Some("This one!".to_string()));
     mock.assert_hits(1);
 

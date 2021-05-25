@@ -1,3 +1,6 @@
+mod routes;
+mod clients;
+
 use std::env;
 
 use anyhow::Result;
@@ -7,8 +10,22 @@ use signal_hook_tokio::Signals;
 use tracing::{info, warn, error};
 use warp::Filter;
 
-mod routes;
-mod clients;
+use crate::clients::{PokemonClient, ShakespeareClient};
+
+fn build_clients() -> Result<(PokemonClient, ShakespeareClient)> {
+
+  // Extract all the required envs
+  let pokemon_url = env::var("POKEAPI_ENDPOINT")?;
+  let pokemon_cache_size = env::var("POKEAPI_CACHE_SIZE")?.parse::<usize>()?;
+  let shakespeare_url = env::var("SHAKESPEARE_TRANSLATOR_ENDPOINT")?;
+
+  // Build the clients
+  let pokemon_client = PokemonClient::new(&pokemon_url, pokemon_cache_size)?;
+  let shakespeare_client = ShakespeareClient::new(&shakespeare_url)?;
+
+  Ok((pokemon_client, shakespeare_client))
+
+}
 
 async fn run() -> Result<()> {
   
@@ -28,9 +45,12 @@ async fn run() -> Result<()> {
       8080
     });
 
+  // Build the API clients
+  let (pokemon_client, shakespeare_client) = build_clients()?;
+
   // Build the application routes.
   // Also, enable tracing for all requests.
-  let r = routes::routes()
+  let r = routes::routes(pokemon_client, shakespeare_client)
     .with(warp::trace::request());
 
   // Start the HTTP server and stop it when a termination signal is received
