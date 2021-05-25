@@ -18,6 +18,12 @@ RUN touch src/main.rs && \
 # Copy the binary to a fresh image
 FROM gcr.io/distroless/cc
 COPY --from=builder /app/target/release/truelayer-pokemon-challenge /truelayer-pokemon-challenge
-USER 1000
+
+# Environment configuration
 ENV PORT 8080
+ENV SHAKESPEARE_TRANSLATOR_ENDPOINT https://api.funtranslations.com/
+ENV POKEAPI_ENDPOINT https://pokeapi.co/api/v2/
+ENV POKEAPI_CACHE_SIZE 100
+
+USER 1000
 ENTRYPOINT ["/truelayer-pokemon-challenge"]
