@@ -16,6 +16,11 @@ impl ShakespeareString {
     &self.0
   }
 
+  /// Consumes this `ShakespeareString` and returns the inner string.
+  pub fn into_str(self) -> String {
+    self.0
+  }
+
 }
 
 /// A client for the Shakespeare Translator API.
