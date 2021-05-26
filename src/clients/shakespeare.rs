@@ -5,6 +5,8 @@ use reqwest::{Client, Url};
 use serde::{Serialize, Deserialize};
 use tracing::{instrument, debug};
 
+use crate::metrics;
+
 /// A `ShakespeareString` represents a string converted to Shakespearean language.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ShakespeareString(String);
@@ -75,6 +77,7 @@ impl ShakespeareClient {
   pub async fn translate(&self, text: &str) -> Result<ShakespeareString> {
 
     debug!("Sending HTTP request");
+    metrics::SHAKESPEARE_REQUESTS.inc();
 
     let mut params = HashMap::new();
     params.insert("text", text);

@@ -2,6 +2,7 @@ use serde::Serialize;
 use tracing::debug;
 use warp::Rejection;
 
+use crate::metrics;
 use crate::routes::State;
 use crate::routes::errors::CustomRejection;
 
@@ -17,6 +18,7 @@ pub async fn handle_get_pokemon(pokemon_name: String, state: State) -> std::resu
   // Before sending the request, check if we have a cached description
   if let Some(cached) = state.cache.lock().unwrap().get(&pokemon_name) {
     debug!("Cache hit");
+    metrics::CACHE_HITS.inc();
     return Ok(GetPokemonReponse {
       name: pokemon_name,
       description: cached.clone()

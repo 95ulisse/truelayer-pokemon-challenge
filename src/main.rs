@@ -1,5 +1,6 @@
 mod routes;
 mod clients;
+mod metrics;
 
 use std::env;
 
@@ -64,7 +65,9 @@ async fn run() -> Result<()> {
 async fn main() {
 
   // Configure tracing collector as soon as possible
-  tracing_subscriber::fmt().init();
+  tracing_subscriber::fmt()
+    .with_env_filter(std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_owned()))
+    .init();
 
   // Delegate to the `run` function
   let exit_code = match run().await {

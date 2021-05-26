@@ -3,6 +3,8 @@ use reqwest::{Client, Url};
 use serde::{Serialize, Deserialize};
 use tracing::{instrument, debug};
 
+use crate::metrics;
+
 /// A client for the Pokemon APIs.
 #[derive(Clone)]
 pub struct PokemonClient {
@@ -45,6 +47,7 @@ impl PokemonClient {
     let name = name.to_lowercase();
 
     debug!("Sending HTTP request");
+    metrics::POKEAPI_REQUESTS.inc();
 
     // Send the request
     let res = self.client.get(self.endpoint_url.join("pokemon-species/")?.join(&name)?)

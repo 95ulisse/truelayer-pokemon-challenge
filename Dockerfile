@@ -21,6 +21,7 @@ COPY --from=builder /app/target/release/truelayer-pokemon-challenge /truelayer-p
 
 # Environment configuration
 ENV PORT 8080
+ENV RUST_LOG "warp=info,truelayer_pokemon_challenge=debug"
 ENV SHAKESPEARE_TRANSLATOR_ENDPOINT https://api.funtranslations.com/
 ENV POKEAPI_ENDPOINT https://pokeapi.co/api/v2/
 ENV POKEAPI_CACHE_SIZE 100
